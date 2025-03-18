@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>优雅公众号排版工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #333;
+            padding: 20px;
+        }
+        
+        .container {
+            display: flex;
+            width: 96%;
+            max-width: 1600px;
+            height: 90vh;
+            min-height: 700px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.12);
+            border-radius: 20px;
+            overflow: hidden;
+            background: #fff;
+        }
+        
+        .editor-panel {
+            width: 50%;
+            background: #fff;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid #eaeaea;
+            min-width: 600px;
+        }
+        
+        .preview-panel {
+            flex: 1;
+            background-color: #f8f9fa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+            overflow: auto;
+            position: relative;
+        }
+        
+        .theme-selector {
+            padding: 20px 25px;
+            border-bottom: 1px solid #f0f0f0;
+            background: #ffffff;
+            position: relative;
+            overflow-y: auto;
+            max-height: 200px;
+        }
+        
+        .theme-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            padding-bottom: 5px;
+        }
+        
+        .theme-item {
+            padding: 8px 16px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            color: #666;
+            background: #f5f5f5;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            margin-bottom: 10px;
+        }
+        
+        .theme-item:hover {
+            background: #f0f0f0;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .theme-item.active {
+            background: #6366f1;
+            color: white;
+            box-shadow: 0 4px 12px rgba(99,102,241,0.35);
+        }
+        
+        .theme-icon {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .settings-bar {
+            padding: 18px 25px;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px;
+            background: #ffffff;
+        }
+        
+        .setting-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .setting-item label {
+            font-size: 14px;
+            color: #666;
+            white-space: nowrap;
+        }
+        
+        .setting-item select, .setting-item input {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            background: #fff;
+            transition: all 0.3s;
+        }
+        
+        .setting-item select:focus, .setting-item input:focus {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99,102,241,0.2);
+            outline: none;
+        }
+        
+        .setting-item input[type="number"] {
+            width: 60px;
+        }
+        
+        .setting-item input[type="color"] {
+            width: 36px;
+            height: 36px;
+            padding: 2px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            background: #fff;
+        }
+        
+        .editor-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        
+        .input-type-toggle {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 10;
+            display: flex;
+            background: rgba(240,240,240,0.9);
+            border-radius: 25px;
+            padding: 3px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            backdrop-filter: blur(4px);
+        }
+        
+        .input-type-option {
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 20px;
+            background: transparent;
+            color: #666;
+            transition: all 0.3s;
+        }
+        
+        .input-type-option.active {
+            background: #fff;
+            color: #6366f1;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+        
+        .editor-textarea {
+            flex: 1;
+            width: 100%;
+            padding: 30px;
+            border: none;
+            outline: none;
+            resize: none;
+            font-size: 15px;
+            line-height: 1.8;
+            color: #333;
+        }
+        
+        .preview-container {
+            width: 500px;
+            height: calc(100% - 40px);
+            background: white;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.08);
+            border-radius: 16px;
+            overflow: hidden;
+            overflow-y: auto;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        /* 默认主题 */
+        .theme-default .preview-content {
+            padding: 25px 30px;
+        }
+        
+        .theme-default .preview-content h1 {
+            font-size: 22px;
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: 600;
+            color: #333;
+            position: relative;
+            padding-bottom: 15px;
+            display: block;
+            width: 100%;
+        }
+        
+        .theme-default .preview-content h1:after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 3px;
+            background-color: #6366f1;
+        }
+        
+        .theme-default .preview-content h2 {
+            font-size: 18px;
+            margin: 30px 0 20px;
+            font-weight: 600;
+            color: #333;
+            padding: 10px 15px;
+            background-color: #f5f7ff;
+            border-radius: 8px;
+            display: block;
+            width: 100%;
+        }
+        
+        .theme-default .preview-content h3 {
+            font-size: 16px;
+            margin: 25px 0 15px;
+            font-weight: 600;
+            color: #6366f1;
+            padding-left: 12px;
+            border-left: 3px solid #6366f1;
+            display: block;
+            width: 100%;
+        }
+        
+        .theme-default .preview-content p {
+            font-size: 15px;
+            line-height: 1.8;
+            margin-bottom: 15px;
+            color: #333;
+            text-align: justify;
+        }
+        
+        .theme-default .preview-content blockquote {
+            border-left: 4px solid #ddd;
+            padding: 5px 20px;
+            margin: 20px 0;
+            color: #666;
+        }
+        
+        /* 温柔粉色主题 */
+        .theme-soft-pink .preview-content {
+            padding: 25px 30px;
+        }
+        
+        .theme-soft-pink .preview-content h1 {
+            font-size: 22px;
+            text-align: center;
+            margin: 0 0 30px;
+            color: #e91e63;
+            font-weight: normal;
+            position: relative;
+            padding: 0 20px 15px;
+            display: block;
+            width: 100%;
+        }
+        
+        .theme-soft-pink .preview-content h1:before,
+        .theme-soft-pink .preview-content h1:after {
+            content: "";
+            position: absolute;
+            height: 10px;
+            width: 10px;
+            background: #ffadc6;
+            border-radius: 50%;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        
+        .theme-soft-pink .preview-content h1:before {
+            left: 0;
+        }
+        
+        .theme-soft-pink .preview-content h1:after {
+            right: 0;
+        }
+        
+        .theme-soft-pink .preview-content h2 {
+            font-size: 18px;
+            color: #fff;
+            margin: 30px 0 20px;
+            font-weight: normal;
+            background: linear-gradient(90deg, #ffadc6, #e91e63);
+            padding: 10px 20px;
+            border-radius: 30px;
+            display: block;
+            width: 100%;
+        }
+        
+        .theme-soft-pink .preview-content h3 {
+            font-size: 16px;
+            color: #e91e63;
+            margin: 25px 0 15px;
+            font-weight: normal;
+            border-bottom: 1px dashed #ffadc6;
+            padding-bottom: 8px;
+            display: block;
+            width: 100%;
+        }
+        
+        .theme-soft-pink .preview-content p {
+            font-size: 15px;
+            line-height: 1.8;
+            color: #555;
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+        
+        .theme-soft-pink .preview-content blockquote {
+            border: 1px solid #ffadc6;
+            border-radius: 12px;
+            padding: 15px 20px;
+            margin: 20px 0;
+            color: #e91e63;
+            position: relative;
+        }
+        
+        /* 马卡龙主题 */
+        .theme-macaron .preview-content {
+            padding: 25px 30px;
+        }
+        
+        .theme-macaron .preview-content h1 {
+            font-size: 22px;
+            text-align: center;
+            margin: 0 0 30px;
+            font-weight: 600;
+            background: linear-gradient(90deg, #8e44ad, #3498db, #1abc9c, #f1c40f);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            padding-bottom: 15px;
+            border-bottom: 1px dotted #ddd;
+            display: block;
+            width: 100%;
+        }
+        
+        .theme-macaron .preview-content h2 {
+            font-size: 18px;
+            margin: 30px 0 20px;
+            font-weight: 600;
+            padding: 10px 20px;
+            background: linear-gradient(90deg, #f5f0ff, #e8f8f5);
+            border-radius: 30px 0 30px 0;
+            border-left: 3px solid #9b59b6;
+            color: #16a085;
+            display: block;
+            width: 100%;
+        }
+        
+        .theme-macaron .preview-content h3 {
+            font-size: 16px;
+            margin: 25px 0 15px;
+            font-weight: 600;
+            color: #e67e22;
+            padding-bottom: 8px;
+            border-bottom: 1px dashed #f1c40f;
+            display: block;
+            width: 100%;
+        }
+        
+        .theme-macaron .preview-content p {
+            font-size: 15px;
+            line-height: 1.8;
+            color: #555;
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+        
+        .theme-macaron .preview-content blockquote {
+            border: 0;
+            position: relative;
+            padding: 15px 20px 15px 50px;
+            background: #fcf9f1;
+            margin: 20px 0;
+            border-radius: 8px;
+            color: #555;
+        }
+        
+        /* 清新卡片主题 */
+        .theme-fresh-card .preview-content {
+            padding: 25px 30px;
+        }
+        
+        .theme-fresh-card .preview-content h1,
+        .theme-fresh-card .preview-content p,
+        .theme-fresh-card .preview-content blockquote,
+        .theme-fresh-card .preview-content h2 {
+            border: 1px solid #ffd8cc;
+            border-radius: 12px;
+            padding: 20px;
+            position: relative;
+        }
+        
+        .theme-fresh-card .preview-content h1 {
+            font-size: 18px;
+            text-align: left;
+            margin: 0 0 30px;
+            color: #333;
+            font-weight: normal;
+            display: block;
+            width: 100%;
+        }
+        
+        .theme-fresh-card .preview-content h2 {
+            font-size: 16px;
+            color: #fff;
+            margin: 30px 0 20px;
+            font-weight: normal;
+            background: #ffa59e;
+            text-align: center;
+            display: block;
+            width: 100%;
+        }
+        
+        .theme-fresh-card .preview-content h3 {
+            font-size: 16px;
+            margin: 25px 0 15px;
+            font-weight: normal;
+            color: #333;
+            display: block;
+            width: 100%;
+        }
+        
+        .theme-fresh-card .preview-content p {
+            font-size: 15px;
+            line-height: 1.8;
+            color: #666;
+            margin-bottom: 20px;
+            text-align: justify;
+        }
+        
+        /* 马卡龙渐变 */
+        .theme-macaron-gradient .preview-content {
+            padding: 25px 30px;
+        }
+        
+        .theme-macaron-gradient .preview-content h1 {
+            font-size: 22px;
+            text-align: center;
+            margin: 0 0 30px;
+            font-weight: 600;
+            position: relative;
+            padding: 15px 20px;
+            background: linear-gradient(to right, #fad0c4 0%, #ffd1ff 100%);
+            color: #6a4162;
+            border-radius: 10px;
+            display: block;
+            width: 100%;
+        }
+        
+        .theme-macaron-gradient .preview-content h2 {
+            font-size: 18px;
+            margin: 30px 0 20px;
+            font-weight: 600;
+            padding: 12px 20px;
+            background: linear-gradient(to right, #a1c4fd 0%, #c2e9fb 100%);
+            color: #2c5282;
+            border-radius: 8px;
+            display: block;
+            width: 100%;
+        }
+        
+        .theme-macaron-gradient .preview-content h3 {
+            font-size: 16px;
+            margin: 25px 0 15px;
+            font-weight: 600;
+            padding: 10px 15px;
+            background: linear-gradient(to right, #d4fc79 0%, #96e6a1 100%);
+            color: #2f6c3d;
+            border-radius: 6px;
+            display: block;
+            width: 100%;
+        }
+        
+        .theme-macaron-gradient .preview-content p {
+            font-size: 15px;
+            line-height: 1.8;
+            color: #333;
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+        
+        /* 极简黑白 */
+        .theme-minimalist .preview-content {
+            padding: 25px 30px;
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+        
+        .theme-minimalist .preview-content h1 {
+            font-size: 24px;
+            text-align: left;
+            margin: 0 0 30px;
+            color: #000;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            display: block;
+            width: 100%;
+        }
+        
+        .theme-minimalist .preview-content h2 {
+            font-size: 18px;
+            color: #000;
+            margin: 35px 0 20px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            display: block;
+            width: 100%;
+        }
+        
+        .theme-minimalist .preview-content h3 {
+            font-size: 16px;
+            color: #000;
+            margin: 25px 0 15px;
+            font-weight: 700;
+            display: block;
+            width: 100%;
+        }
+        
+        .theme-minimalist .preview-content p {
+            font-size: 15px;
+            line-height: 1.8;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: justify;
+        }
+        
+        .theme-minimalist .preview-content blockquote {
+            border-left: 2px solid #000;
+            padding: 10px 20px;
+            margin: 25px 0;
+            color: #555;
+            font-style: italic;
+        }
+        /* 简约书法风 */
+        .theme-calligraphy .preview-content {
+            padding: 30px 35px;
+            background: #fffef9;
+        }
+        
+        .theme-calligraphy .preview-content h1 {
+            font-size: 24px;
+            text-align: center;
+            margin: 0 0 35px;
+            color: #32292f;
+            font-weight: 500;
+            position: relative;
+            padding-bottom: 20px;
+            display: block;
+            width: 100%;
+            font-family: "Songti SC", "STSong", "SimSun", serif;
+            letter-spacing: 2px;
+        }
+        
+        .theme-calligraphy .preview-content h1:after {
+            content: "";
+            position: absolute;
+            width: 40px;
+            height: 1px;
+            background: #32292f;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .theme-calligraphy .preview-content h2 {
+            font-size: 18px;
+            margin: 35px 0 20px;
+            font-weight: 500;
+            color: #32292f;
+            padding: 0 0 8px 0;
+            border-bottom: 1px solid #e7e1d7;
+            display: block;
+            width: 100%;
+            font-family: "Songti SC", "STSong", "SimSun", serif;
+            letter-spacing: 1px;
+        }
+        
+        .theme-calligraphy .preview-content h3 {
+            font-size: 16px;
+            margin: 25px 0 15px;
+            font-weight: 500;
+            color: #32292f;
+            padding-left: 12px;
+            border-left: 2px solid #c2b8a3;
+            display: block;
+            width: 100%;
+            font-family: "Songti SC", "STSong", "SimSun", serif;
+        }
+        
+        .theme-calligraphy .preview-content p {
+            font-size: 15px;
+            line-height: 2;
+            color: #32292f;
+            margin-bottom: 15px;
+            text-align: justify;
+            text-indent: 2em;
+            font-family: "Songti SC", "STSong", "SimSun", serif;
+        }
+        
+        .theme-calligraphy .preview-content blockquote {
+            border: none;
+            border-left: 3px solid #c2b8a3;
+            padding: 0 0 0 20px;
+            margin: 25px 0;
+            color: #6d6c6c;
+            font-style: italic;
+        }
+        
+        /* 北欧简约风 */
+        .theme-nordic .preview-content {
+            padding: 25px 30px;
+        }
+        
+        .theme-nordic .preview-content h1 {
+            font-size: 24px;
+            text-align: left;
+            margin: 0 0 30px;
+            color: #3c4043;
+            font-weight: 600;
+            position: relative;
+            display: block;
+            width: 100%;
+        }
+        
+        .theme-nordic .preview-content h2 {
+            font-size: 18px;
+            margin: 40px 0 20px;
+            color: #3c4043;
+            font-weight: 600;
+            padding-left: 14px;
+            border-left: 4px solid #d9e2ec;
+            display: block;
+            width: 100%;
+        }
+        
+        .theme-nordic .preview-content h3 {
+            font-size: 16px;
+            margin: 25px 0 15px;
+            color: #3c4043;
+            font-weight: 600;
+            display: block;
+            width: 100%;
+        }
+        
+        .theme-nordic .preview-content p {
+            font-size: 15px;
+            line-height: 1.8;
+            color: #3c4043;
+            margin-bottom: 20px;
+            text-align: justify;
+        }
+        
+        .theme-nordic .preview-content blockquote {
+            background: #f5f7f9;
+            padding: 20px;
+            margin: 25px 0;
+            color: #3c4043;
+            border-radius: 8px;
+            font-style: normal;
+        }
+        
+        /* 水墨画风 */
+        .theme-ink-painting .preview-content {
+            padding: 30px;
+        }
+        
+        .theme-ink-painting .preview-content h1 {
+            font-size: 24px;
+            text-align: center;
+            margin: 0 0 35px;
+            color: #232323;
+            font-weight: 500;
+            position: relative;
+            padding: 0 0 15px 0;
+            display: block;
+            width: 100%;
+            font-family: "Kaiti SC", "STKaiti", "KaiTi", serif;
+            letter-spacing: 2px;
+        }
+        
+        .theme-ink-painting .preview-content h1:after {
+            content: "§";
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 18px;
+            opacity: 0.7;
+        }
+        
+        .theme-ink-painting .preview-content h2 {
+            font-size: 18px;
+            margin: 35px 0 20px;
+            color: #232323;
+            font-weight: 500;
+            padding: 5px 0 5px 12px;
+            border-left: 3px solid #8c8c8c;
+            display: block;
+            width: 100%;
+            font-family: "Kaiti SC", "STKaiti", "KaiTi", serif;
+        }
+        
+        .theme-ink-painting .preview-content h3 {
+            font-size: 16px;
+            margin: 25px 0 15px;
+            color: #232323;
+            font-weight: 500;
+            display: block;
+            width: 100%;
+            font-family: "Kaiti SC", "STKaiti", "KaiTi", serif;
+        }
+        
+        .theme-ink-painting .preview-content p {
+            font-size: 15px;
+            line-height: 2;
+            color: #232323;
+            margin-bottom: 20px;
+            text-align: justify;
+            font-family: "Kaiti SC", "STKaiti", "KaiTi", serif;
+        }
+        
+        .theme-ink-painting .preview-content blockquote {
+            border-left: 2px solid #8c8c8c;
+            padding: 5px 0 5px 20px;
+            margin: 25px 0;
+            color: #454545;
+        }
+        
+        /* 莫兰迪色系 */
+        .theme-morandi .preview-content {
+            padding: 25px 30px;
+        }
+        
+        .theme-morandi .preview-content h1 {
+            font-size: 22px;
+            text-align: center;
+            margin: 0 0 30px;
+            color: #6d7a72;
+            font-weight: 600;
+            position: relative;
+            padding-bottom: 15px;
+            display: block;
+            width: 100%;
+        }
+        
+        .theme-morandi .preview-content h1:after {
+            content: "";
+            position: absolute;
+            width: 60px;
+            height: 2px;
+            background: #bbc2bc;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .theme-morandi .preview-content h2 {
+            font-size: 18px;
+            margin: 30px 0 20px;
+            color: #fff;
+            font-weight: 600;
+            padding: 10px 20px;
+            background: #a6aca6;
+            border-radius: 5px;
+            display: block;
+            width: 100%;
+        }
+        
+        .theme-morandi .preview-content h3 {
+            font-size: 16px;
+            margin: 25px 0 15px;
+            color: #6d7a72;
+            font-weight: 600;
+            padding-left: 12px;
+            border-left: 3px solid #bbc2bc;
+            display: block;
+            width: 100%;
+        }
+        
+        .theme-morandi .preview-content p {
+            font-size: 15px;
+            line-height: 1.8;
+            color: #454b42;
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+        
+        .theme-morandi .preview-content blockquote {
+            background: #eef0ef;
+            padding: 15px 20px;
+            margin: 20px 0;
+            color: #6d7a72;
+            border-radius: 5px;
+            border-left: 3px solid #bbc2bc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="editor-panel">
+            <div class="theme-selector">
+                <div class="theme-group">
+                    <div class="theme-item active" data-theme="theme-default">
+                        <div class="theme-icon" style="background-color: #6366f1;"></div>
+                        默认主题
+                    </div>
+                    <div class="theme-item" data-theme="theme-soft-pink">
+                        <div class="theme-icon" style="background-color: #e91e63;"></div>
+                        温柔粉色
+                    </div>
+                    <div class="theme-item" data-theme="theme-macaron">
+                        <div class="theme-icon" style="background: linear-gradient(90deg, #8e44ad, #3498db, #1abc9c, #f1c40f);"></div>
+                        马卡龙色
+                    </div>
+                    <div class="theme-item" data-theme="theme-fresh-card">
+                        <div class="theme-icon" style="background-color: #ffa59e;"></div>
+                        清新卡片
+                    </div>
+                    <div class="theme-item" data-theme="theme-macaron-gradient">
+                        <div class="theme-icon" style="background: linear-gradient(90deg, #fad0c4, #ffd1ff, #a1c4fd);"></div>
+                        马卡龙渐变
+                    </div>
+                    <div class="theme-item" data-theme="theme-minimalist">
+                        <div class="theme-icon" style="background: linear-gradient(90deg, #000, #666);"></div>
+                        极简黑白
+                    </div>
+                    <div class="theme-item" data-theme="theme-calligraphy">
+                        <div class="theme-icon" style="background-color: #32292f;"></div>
+                        简约书法风
+                    </div>
+                    <div class="theme-item" data-theme="theme-nordic">
+                        <div class="theme-icon" style="background-color: #d9e2ec;"></div>
+                        北欧简约风
+                    </div>
+                    <div class="theme-item" data-theme="theme-ink-painting">
+                        <div class="theme-icon" style="background: linear-gradient(90deg, #232323, #8c8c8c);"></div>
+                        水墨画风
+                    </div>
+                    <div class="theme-item" data-theme="theme-morandi">
+                        <div class="theme-icon" style="background: linear-gradient(90deg, #6d7a72, #bbc2bc);"></div>
+                        莫兰迪色系
+                    </div>
+                </div>
+            </div>
+            <div class="settings-bar">
+                <div class="setting-item">
+                    <label for="font-size">字号</label>
+                    <input type="number" id="font-size" min="12" max="20" value="15">
+                </div>
+                <div class="setting-item">
+                    <label for="line-height">行高</label>
+                    <input type="number" id="line-height" min="1.2" max="2.5" value="1.8" step="0.1">
+                </div>
+                <div class="setting-item">
+                    <label for="text-align">对齐</label>
+                    <select id="text-align">
+                        <option value="justify">两端对齐</option>
+                        <option value="left">左对齐</option>
+                        <option value="center">居中</option>
+                    </select>
+                </div>
+                <div class="setting-item">
+                    <label for="text-color">文字颜色</label>
+                    <input type="color" id="text-color" value="#333333">
+                </div>
+                <div class="setting-item">
+                    <label for="font-family">字体</label>
+                    <select id="font-family">
+                        <option value="default">默认字体</option>
+                        <option value="serif">衬线字体</option>
+                        <option value="sans-serif">无衬线字体</option>
+                    </select>
+                </div>
+            </div>
+            <div class="editor-container">
+                <div class="input-type-toggle">
+                    <div class="input-type-option active" data-type="text">纯文本</div>
+                    <div class="input-type-option" data-type="markdown">Markdown</div>
+                </div>
+                <textarea class="editor-textarea">
+# 公众号排版样例标题
+                
+## 这是一个二级标题
+
+这是一段正文内容，用于展示文本的排版效果。好的排版可以让你的文章看起来更加专业和美观，提高读者的阅读体验。
+
+**这是加粗的文字**，*这是斜体文字*。
+
+## 引用和列表
+
+> 这是一段引用文字，可以用来强调观点或引用他人的话。
+
+以下是无序列表：
+
+* 列表项一
+* 列表项二
+* 列表项三
+
+以下是有序列表：
+
+1. 第一步
+2. 第二步
+3. 第三步
+
+## 另一个二级标题
+
+这是最后一段内容，感谢使用我们的排版工具！希望它能帮助你创建美观的公众号文章。</textarea>
+            </div>
+        </div>
+        <div class="preview-panel">
+            <div class="preview-container theme-default">
+                <div class="preview-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 获取元素
+            const editor = document.querySelector('.editor-textarea');
+            const previewContent = document.querySelector('.preview-content');
+            const previewContainer = document.querySelector('.preview-container');
+            const themeItems = document.querySelectorAll('.theme-item');
+            const inputTypeOptions = document.querySelectorAll('.input-type-option');
+            
+            // 设置选项
+            const fontSize = document.getElementById('font-size');
+            const lineHeight = document.getElementById('line-height');
+            const textAlign = document.getElementById('text-align');
+            const textColor = document.getElementById('text-color');
+            const fontFamily = document.getElementById('font-family');
+            
+            // 状态变量
+            let isMarkdownMode = false;
+            let h2Count = 0;
+            
+            // 主题切换
+            themeItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    themeItems.forEach(i => i.classList.remove('active'));
+                    item.classList.add('active');
+                    
+                    const theme = item.getAttribute('data-theme');
+                    previewContainer.className = 'preview-container ' + theme;
+                    
+                    updatePreview();
+                });
+            });
+            
+            // 输入模式切换
+            inputTypeOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    inputTypeOptions.forEach(o => o.classList.remove('active'));
+                    option.classList.add('active');
+                    
+                    isMarkdownMode = option.getAttribute('data-type') === 'markdown';
+                    updatePreview();
+                });
+            });
+            
+            // 实时更新预览
+            editor.addEventListener('input', updatePreview);
+            
+            // 设置变更时更新预览 - 修复格式控件
+            fontSize.addEventListener('change', updatePreview);
+            lineHeight.addEventListener('change', updatePreview);
+            textAlign.addEventListener('change', updatePreview);
+            textColor.addEventListener('change', updatePreview);
+            fontFamily.addEventListener('change', updatePreview);
+            
+            // 确保控件即时响应
+            fontSize.addEventListener('input', updatePreview);
+            lineHeight.addEventListener('input', updatePreview);
+            textColor.addEventListener('input', updatePreview);
+            
+            // 将Markdown转换为HTML
+            function markdownToHtml(markdown) {
+                // 重置二级标题计数
+                h2Count = 0;
+                
+                // 转换标题
+                let html = markdown
+                    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+                    .replace(/^## (.*$)/gim, function(match, p1) {
+                        h2Count++;
+                        return '<h2 data-index="' + h2Count + '">' + p1 + '</h2>';
+                    })
+                    .replace(/^# (.*$)/gim, '<h1>$1</h1>');
+                
+                // 转换粗体和斜体
+                html = html
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                    .replace(/_(.*?)_/g, '<em>$1</em>')
+                    .replace(/__(.*)__/g, '<strong>$1</strong>');
+                
+                // 转换引用
+                html = html.replace(/^\> (.*$)/gim, '<blockquote>$1</blockquote>');
+                
+                // 转换列表
+                html = html
+                    .replace(/^\s*\d+\.\s+(.*$)/gim, '<li>$1</li>')
+                    .replace(/^\s*[\-\*]\s+(.*$)/gim, '<li>$1</li>');
+                
+                // 包装列表
+                let inList = false;
+                const lines = html.split('\n');
+                html = '';
+                
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i];
+                    
+                    if (line.indexOf('<li>') !== -1) {
+                        if (!inList) {
+                            // 检测是有序还是无序列表
+                            const prevLine = i > 0 ? lines[i-1] : '';
+                            if (prevLine && prevLine.match(/^\s*\d+\.\s+/)) {
+                                html += '<ol>';
+                            } else {
+                                html += '<ul>';
+                            }
+                            inList = true;
+                        }
+                        html += line;
+                    } else {
+                        if (inList) {
+                            // 上一个是有序还是无序列表
+                            const prevLine = i > 0 ? lines[i-1] : '';
+                            if (prevLine && prevLine.match(/^\s*\d+\.\s+/)) {
+                                html += '</ol>';
+                            } else {
+                                html += '</ul>';
+                            }
+                            inList = false;
+                        }
+                        html += line;
+                    }
+                }
+                
+                if (inList) {
+                    // 检查最后的列表类型
+                    const lastLine = lines[lines.length-1] || '';
+                    if (lastLine && lastLine.match(/^\s*\d+\.\s+/)) {
+                        html += '</ol>';
+                    } else {
+                        html += '</ul>';
+                    }
+                }
+                
+                // 转换链接
+                html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+                
+                // 转换图片
+                html = html.replace(/!\[([^\]]+)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="max-width:100%;display:block;margin:10px 0;">');
+                
+                // 转换代码
+                html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+                
+                // 转换分隔线
+                html = html.replace(/^\-\-\-+$/gim, '<hr>');
+                
+                // 将剩余的换行符转换为段落
+                const paragraphs = html.split(/\n\n+/);
+                html = '';
+                
+                for (let i = 0; i < paragraphs.length; i++) {
+                    const p = paragraphs[i].trim();
+                    if (p) {
+                        if (!p.startsWith('<h1>') && !p.startsWith('<h2>') && !p.startsWith('<h3>') && 
+                            !p.startsWith('<blockquote>') && !p.startsWith('<ul>') && !p.startsWith('<ol>') && 
+                            !p.startsWith('<hr>') && !p.startsWith('<img ')) {
+                            html += '<p>' + p.replace(/\n/g, '<br>') + '</p>';
+                        } else {
+                            html += p;
+                        }
+                    }
+                }
+                
+                return html;
+            }
+            
+            // 更新预览函数
+            function updatePreview() {
+                const content = editor.value || '';
+                
+                if (isMarkdownMode) {
+                    // Markdown 模式
+                    const htmlContent = markdownToHtml(content);
+                    previewContent.innerHTML = htmlContent;
+                } else {
+                    // 纯文本模式
+                    previewContent.innerHTML = '';
+                    
+                    // 第一行作为标题
+                    const lines = content.split(/\n/);
+                    if (lines.length > 0 && lines[0].trim()) {
+                        const h1 = document.createElement('h1');
+                        h1.textContent = lines[0].trim();
+                        previewContent.appendChild(h1);
+                        
+                        // 剩余内容作为段落
+                        const remainingLines = lines.slice(1).join('\n');
+                        const paragraphs = remainingLines.split(/\n\n+/);
+                        
+                        paragraphs.forEach(paragraph => {
+                            if (paragraph.trim() !== '') {
+                                const p = document.createElement('p');
+                                p.innerHTML = paragraph.replace(/\n/g, '<br>');
+                                previewContent.appendChild(p);
+                            }
+                        });
+                    } else {
+                        // 没有标题，所有内容作为段落
+                        const paragraphs = content.split(/\n\n+/);
+                        
+                        paragraphs.forEach(paragraph => {
+                            if (paragraph.trim() !== '') {
+                                const p = document.createElement('p');
+                                p.innerHTML = paragraph.replace(/\n/g, '<br>');
+                                previewContent.appendChild(p);
+                            }
+                        });
+                    }
+                }
+                
+                // 确保段落不会紧接在标题后面
+                ensureSpacingAfterHeadings();
+                
+                // 应用样式设置
+                applyStyles();
+            }
+            
+            // 确保标题和段落之间有足够的间距
+            function ensureSpacingAfterHeadings() {
+                const headings = previewContent.querySelectorAll('h1, h2, h3');
+                
+                headings.forEach(heading => {
+                    // 检查标题后面是否紧跟着一个段落
+                    let nextElement = heading.nextElementSibling;
+                    
+                    if (nextElement && nextElement.tagName.toLowerCase() === 'p') {
+                        // 如果是段落，确保有合适的上边距
+                        nextElement.style.marginTop = '15px';
+                    }
+                });
+            }
+            
+            // 应用样式函数 - 完全重写以修复样式应用问题
+            function applyStyles() {
+                // 获取所有文本元素
+                const allTextElements = previewContent.querySelectorAll('p, h1, h2, h3, li, blockquote');
+                const paragraphs = previewContent.querySelectorAll('p');
+                
+                // 获取设置值
+                const fontSizeValue = fontSize.value + 'px';
+                const lineHeightValue = lineHeight.value;
+                const textAlignValue = textAlign.value;
+                const textColorValue = textColor.value;
+                
+                // 设置字体
+                let fontFamilyValue = '';
+                switch(fontFamily.value) {
+                    case 'serif':
+                        fontFamilyValue = 'Georgia, Times, "Times New Roman", serif';
+                        break;
+                    case 'sans-serif':
+                        fontFamilyValue = '"Helvetica Neue", Arial, sans-serif';
+                        break;
+                    // 默认不设置，使用主题默认
+                }
+                
+                // 应用样式到所有文本元素
+                allTextElements.forEach(el => {
+                    // 对段落应用所有样式
+                    if (el.tagName.toLowerCase() === 'p') {
+                        el.style.fontSize = fontSizeValue;
+                        el.style.lineHeight = lineHeightValue;
+                        el.style.textAlign = textAlignValue;
+                        el.style.color = textColorValue;
+                    } 
+                    // 对其他元素只应用字体和颜色
+                    else {
+                        el.style.color = textColorValue;
+                    }
+                    
+                    // 应用字体家族到所有元素
+                    if (fontFamilyValue) {
+                        el.style.fontFamily = fontFamilyValue;
+                    }
+                });
+            }
+            
+            // 初始化预览
+            updatePreview();
+        });
+    </script>
+</body>
+</html>
