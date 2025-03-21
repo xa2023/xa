@@ -328,52 +328,8 @@
             console.log("处理SVG下载...");
             
             try {
-                // 创建图片
-                const img = new Image();
-                
-                // 获取SVG数据
-                const svgData = new XMLSerializer().serializeToString(svgElement);
-                const svgBlob = new Blob([svgData], {type: 'image/svg+xml;charset=utf-8'});
-                const svgUrl = URL.createObjectURL(svgBlob);
-                
-                // 图片加载后的处理
-                img.onload = function() {
-                    try {
-                        // 获取尺寸
-                        const width = svgElement.getAttribute('width') || svgElement.getBoundingClientRect().width;
-                        const height = svgElement.getAttribute('height') || svgElement.getBoundingClientRect().height;
-                        
-                        // 创建画布
-                        const canvas = document.createElement('canvas');
-                        canvas.width = width;
-                        canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        
-                        // 绘制背景和图片
-                        ctx.fillStyle = 'white';
-                        ctx.fillRect(0, 0, width, height);
-                        ctx.drawImage(img, 0, 0, width, height);
-                        
-                        // 导出为PNG
-                        downloadCanvasAsPng(canvas);
-                        
-                        // 清理资源
-                        URL.revokeObjectURL(svgUrl);
-                    } catch (error) {
-                        console.error("SVG转PNG错误:", error);
-                        fallbackToHtml2Canvas();
-                    }
-                };
-                
-                // 错误处理
-                img.onerror = function(error) {
-                    console.error("SVG加载错误:", error);
-                    URL.revokeObjectURL(svgUrl);
-                    fallbackToHtml2Canvas();
-                };
-                
-                // 设置图片源
-                img.src = svgUrl;
+                // 直接使用html2canvas，避免Canvas污染问题
+                fallbackToHtml2Canvas();
             } catch (error) {
                 console.error("SVG处理错误:", error);
                 fallbackToHtml2Canvas();
@@ -386,25 +342,65 @@
             fallbackToHtml2Canvas();
         }
         
-        // 使用html2canvas作为备用方案
+        // 使用html2canvas作为主要方案
         function fallbackToHtml2Canvas() {
             console.log("使用html2canvas...");
             
+            // 检查并尝试重新加载html2canvas
             if (typeof html2canvas === 'undefined') {
-                console.error("html2canvas未加载");
-                showMessage("无法加载html2canvas库，请检查网络连接。", "error");
-                resetDownloadButton();
+                console.error("html2canvas未加载，尝试重新加载");
+                
+                // 创建script元素加载html2canvas
+                const script = document.createElement('script');
+                script.src = "https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js";
+                script.onload = function() {
+                    console.log("html2canvas加载成功，重试下载");
+                    // 重新尝试下载
+                    setTimeout(function() {
+                        fallbackToHtml2Canvas();
+                    }, 500);
+                };
+                script.onerror = function() {
+                    console.error("无法加载html2canvas");
+                    showMessage("无法加载html2canvas库，请检查网络连接。", "error");
+                    resetDownloadButton();
+                };
+                
+                document.head.appendChild(script);
                 return;
             }
             
             try {
+                // 添加下载中提示
+                showMessage("正在生成图片，请稍候...", "warning");
+                
                 html2canvas(previewContent, {
                     backgroundColor: "#ffffff",
-                    scale: 1,
+                    scale: 2, // 增加比例以提高质量
                     useCORS: true,
-                    allowTaint: true
+                    allowTaint: true,
+                    logging: false // 关闭日志减少控制台输出
                 }).then(function(canvas) {
-                    downloadCanvasAsPng(canvas);
+                    // 直接从canvas创建下载链接
+                    try {
+                        const dataURL = canvas.toDataURL('image/png');
+                        const link = document.createElement('a');
+                        link.href = dataURL;
+                        link.download = 'preview.png';
+                        document.body.appendChild(link);
+                        link.click();
+                        
+                        // 清理DOM
+                        setTimeout(function() {
+                            document.body.removeChild(link);
+                            showMessage("图片已成功下载！", "success");
+                            resetDownloadButton();
+                        }, 100);
+                    } catch (error) {
+                        console.error("Canvas导出错误:", error);
+                        showMessage("保存图片时出错，请尝试简化内容", "error");
+                        resetDownloadButton();
+                    }
                 }).catch(function(error) {
                     console.error("html2canvas错误:", error);
                     showMessage("转换为图片时出错", "error");
@@ -417,35 +413,7 @@
             }
         }
         
-        // 将Canvas下载为PNG
-        function downloadCanvasAsPng(canvas) {
-            console.log("导出Canvas为PNG...");
-            
-            try {
-                // 转换为数据URL
-                const dataURL = canvas.toDataURL('image/png');
-                
-                // 创建下载链接
-                const link = document.createElement('a');
-                link.download = 'preview.png';
-                link.href = dataURL;
-                
-                // 添加到文档并触发点击
-                document.body.appendChild(link);
-                link.click();
-                
-                // 删除链接
-                setTimeout(function() {
-                    document.body.removeChild(link);
-                    showMessage("图片已成功下载！", "success");
-                    resetDownloadButton();
-                }, 100);
-            } catch (error) {
-                console.error("PNG导出错误:", error);
-                showMessage("保存PNG时出错", "error");
-                resetDownloadButton();
-            }
-        }
+        // 不再单独使用这个函数，删除以避免调用它
         
         // 显示消息
         function showMessage(text, type) {
